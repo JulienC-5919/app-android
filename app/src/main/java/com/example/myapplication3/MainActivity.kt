@@ -7,8 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -29,6 +31,8 @@ import com.example.myapplication3.ui.theme.MyApplication3Theme
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.round
+import kotlin.math.roundToInt
+import kotlin.text.toFloatOrNull
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     var amountStr by remember { mutableStateOf("") }
     var amount by remember {mutableFloatStateOf(0.0f)}
@@ -55,6 +60,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     var tipPercentage by remember { mutableFloatStateOf(0.1f) }
     var tipAmount by remember {mutableFloatStateOf(0.0f)}
     var tipAmountStr by remember { mutableStateOf("") }
+
+    var people by remember { mutableStateOf(1) }
 
     val locale = Locale.getDefault()
     val currencyFormat = NumberFormat.getCurrencyInstance(locale)
@@ -65,6 +72,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
     val percentage: DecimalFormat = DecimalFormat("#%")
 
+    val decimalSeparator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
+
     Column(modifier = modifier.padding(16.dp)) {
         Text(
             text = "Montant de l'addition"
@@ -73,13 +82,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             value = amountStr,
             onValueChange = {
 
-                val decimalSeparator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
-
-                amountStr = cleanNumber(amountStr, decimalSeparator)
+                amountStr = cleanNumber(it, decimalSeparator)
                 
-                // Conversion en float (nécessite le point comme séparateur)
-                val amountForConv = amountStr.replace(',', '.')
-                val conv = amountForConv.toFloatOrNull()
+                val conv = toFloat(amountStr)
 
                 if (conv != null) {
                     amount = conv
@@ -109,26 +114,54 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         Slider(
             value = tipPercentage,
             onValueChange = {
-                tipPercentage = it
+                tipPercentage = round(it*100)/100
+
+                tipAmount = round(amount * tipPercentage*100)/100
+                tipAmountStr = tipAmount.toString()
+                if (decimalSeparator == ',') {
+                    tipAmountStr = tipAmountStr.replace(".", ",")
+                }
                             },
             valueRange = 0.05f..0.2f
         )
         Row() {
             Text(text = "5 %")
             Text(text = "10 %")
+            Text(text = "15 %")
             Text(text = "20 %")
         }
         Text(text = "Montant du pourboire")
         OutlinedTextField(
             value = tipAmountStr,
-            onValueChange = { tipAmountStr = it },
-            label = { Text("Montant") },
+            onValueChange = {/*
+                tipAmountStr = cleanNumber(it, decimalSeparator)
+
+                val conv = toFloat(tipAmountStr)
+
+                if (conv != null) {
+                    tipAmount = conv
+                    tipPercentage = tipAmount / amount
+                }
+                            */},
+            label = { Text("0") },
             prefix = if (isSymbolPrefix) { { Text(currencySymbol) } } else null,
             suffix = if (!isSymbolPrefix) { { Text(currencySymbol) } } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.padding(top = 8.dp)
         )
-
+        Text(text="Nombre de personnes : $people")
+        Slider(
+            value = people.toFloat(),
+            onValueChange = {
+                people = it.roundToInt()
+            },
+            valueRange = 1f..10f
+        )
+        Row() {
+            Text(text = "1")
+            Text(text = "5")
+            Text(text = "10")
+        }
     }
 }
 
@@ -140,15 +173,16 @@ fun GreetingPreview() {
     }
 }
 
-fun cleanNumber(num : String, decimalSeparator: char): String {
+fun cleanNumber(num : String, decimalSeparator: Char): String {
 
     val otherSeparator = if (decimalSeparator == '.') ',' else '.'
 
     // Nettoyer l'entrée : garder chiffres et séparateurs, supprimer le signe moins
-    var cleaned = it.filter { it.isDigit() || it == '.' || it == ',' }
+    var cleaned = num.filter { it.isDigit() || it == '.' || it == ',' }
 
     // Remplacer le séparateur incorrect par le bon selon la langue
     cleaned = cleaned.replace(otherSeparator, decimalSeparator)
+
 
     // Garder seulement le premier séparateur et 2 chiffres après
     val firstSeparatorIndex = cleaned.indexOf(decimalSeparator)
@@ -158,4 +192,11 @@ fun cleanNumber(num : String, decimalSeparator: char): String {
         val truncatedAfter = if (after.length > 2) after.substring(0, 2) else after
         return before + truncatedAfter
     }
+    return cleaned
+}
+
+fun toFloat(num: String): Float? {
+    return num
+        .replace(',', '.')
+        .toFloatOrNull()
 }
