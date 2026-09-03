@@ -73,8 +73,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     val percentage: DecimalFormat = DecimalFormat("#%")
 
     val decimalSeparator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
+    Scaffold() {
 
-    Column(modifier = modifier.padding(16.dp)) {
+        innerPadding -> Column(modifier = modifier.padding(innerPadding).padding(16.dp)) {
         Text(
             text = "Montant de l'addition"
         )
@@ -163,7 +164,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             Text(text = "10")
         }
     }
-}
+}}
 
 @Preview(showBackground = true)
 @Composable
