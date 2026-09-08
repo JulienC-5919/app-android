@@ -1,29 +1,48 @@
 package com.example.myapplication3
 
+import android.R.attr.top
 import android.icu.text.DecimalFormat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +53,8 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.text.toFloatOrNull
 
+
+const val taxes = 0.14975f
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +72,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -59,25 +81,82 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     var applyTaxes by remember { mutableStateOf(true) }
     var tipPercentage by remember { mutableFloatStateOf(0.1f) }
     var tipAmount by remember {mutableFloatStateOf(0.0f)}
-    var tipAmountStr by remember { mutableStateOf("") }
 
-    var people by remember { mutableStateOf(1) }
+    var people by remember { mutableIntStateOf(1) }
 
     val locale = Locale.getDefault()
     val currencyFormat = NumberFormat.getCurrencyInstance(locale)
     val currencySymbol = currencyFormat.currency?.getSymbol(locale) ?: ""
 
     // Détermine si le symbole doit être devant ou derrière selon la locale
-    val isSymbolPrefix = currencyFormat.format(0.0).trim().startsWith(currencySymbol)
+    var isSymbolPrefix = currencyFormat.format(0.0).trim().startsWith(currencySymbol)
 
-    val percentage: DecimalFormat = DecimalFormat("#%")
+    val percentage = DecimalFormat("#%")
 
     val decimalSeparator = java.text.DecimalFormatSymbols.getInstance(locale).decimalSeparator
-    Scaffold() {
 
-        innerPadding -> Column(modifier = modifier.padding(innerPadding).padding(16.dp)) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_title)) },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Français") },
+                                onClick = { showMenu = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("English") },
+                                onClick = { showMenu = false }
+                            )
+                        }
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            val totalWithTaxes = (amount + tipAmount) * ( 1f + if (applyTaxes) taxes else 0f)
+            BottomAppBar {
+
+                Column(Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Total :")
+                        Text(currencyFormat.format(totalWithTaxes))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Total par personne :")
+                        Text(currencyFormat.format(totalWithTaxes / people))
+                    }
+                }
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {}) { Text("Réinitialiser") }
+        }
+    ) {
+
+        innerPadding -> Column(modifier = modifier
+        .padding(innerPadding)
+        .padding(16.dp)) {
         Text(
-            text = "Montant de l'addition"
+            text = "Montant de l'addition :"
         )
         OutlinedTextField(
             value = amountStr,
@@ -90,7 +169,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 if (conv != null) {
                     amount = conv
                     tipAmount = round((conv * tipPercentage) * 100) / 100
-                    tipAmountStr = tipAmount.toString().replace('.', decimalSeparator)
                 }
 
             },
@@ -98,17 +176,27 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             prefix = if (isSymbolPrefix) { { Text(currencySymbol) } } else null,
             suffix = if (!isSymbolPrefix) { { Text(currencySymbol) } } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth()
         )
-        Row() {
+
+        HorizontalDivider( modifier = Modifier.padding(top = 10.dp, bottom = 20.dp) )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = "Ajouter les taxes (14.975%)"
+                text = "Ajouter les taxes (14.975%)",
+                modifier = Modifier.weight(1f)
             )
             Switch(
                 checked = applyTaxes,
                 onCheckedChange = { applyTaxes = it }
             )
         }
+
+        HorizontalDivider( modifier = Modifier.padding(top = 10.dp, bottom = 20.dp) )
+
         Text(
             text="Pourboire : " + percentage.format(tipPercentage)
         )
@@ -118,38 +206,34 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 tipPercentage = round(it*100)/100
 
                 tipAmount = round(amount * tipPercentage*100)/100
-                tipAmountStr = tipAmount.toString()
-                if (decimalSeparator == ',') {
-                    tipAmountStr = tipAmountStr.replace(".", ",")
-                }
+
                             },
             valueRange = 0.05f..0.2f
         )
-        Row() {
-            Text(text = "5 %")
-            Text(text = "10 %")
-            Text(text = "15 %")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = "5 %", modifier = Modifier.weight(1f))
+            Text(text = "10 %", modifier = Modifier.weight(1f))
+            Text(text = "15 %", modifier = Modifier.weight(1f))
             Text(text = "20 %")
         }
+
+        Spacer(
+            modifier = Modifier.height(15.dp)
+        )
+
         Text(text = "Montant du pourboire")
         OutlinedTextField(
-            value = tipAmountStr,
-            onValueChange = {/*
-                tipAmountStr = cleanNumber(it, decimalSeparator)
-
-                val conv = toFloat(tipAmountStr)
-
-                if (conv != null) {
-                    tipAmount = conv
-                    tipPercentage = tipAmount / amount
-                }
-                            */},
-            label = { Text("0") },
-            prefix = if (isSymbolPrefix) { { Text(currencySymbol) } } else null,
-            suffix = if (!isSymbolPrefix) { { Text(currencySymbol) } } else null,
+            value = currencyFormat.format(tipAmount),
+            readOnly = true,
+            onValueChange = {},
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth()
         )
+
+        HorizontalDivider( modifier = Modifier.padding(top = 10.dp, bottom = 20.dp) )
+
         Text(text="Nombre de personnes : $people")
         Slider(
             value = people.toFloat(),
@@ -158,9 +242,12 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             },
             valueRange = 1f..10f
         )
-        Row() {
-            Text(text = "1")
-            Text(text = "5")
+        Row(
+            modifier = Modifier.fillMaxWidth()
+
+        ) {
+            Text(text = "1", modifier = Modifier.weight(4f))
+            Text(text = "5", modifier = Modifier.weight(5f))
             Text(text = "10")
         }
     }
