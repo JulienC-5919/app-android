@@ -1,9 +1,11 @@
 package com.example.myapplication3
 
 import android.R.attr.top
+import android.graphics.Color as AndroidColor
 import android.icu.text.DecimalFormat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +36,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -42,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,7 +62,10 @@ const val taxes = 0.14975f
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+        )
         setContent {
             MyApplication3Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -89,7 +96,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     val currencySymbol = currencyFormat.currency?.getSymbol(locale) ?: ""
 
     // Détermine si le symbole doit être devant ou derrière selon la locale
-    var isSymbolPrefix = currencyFormat.format(0.0).trim().startsWith(currencySymbol)
+    val isSymbolPrefix = currencyFormat.format(0.0).trim().startsWith(currencySymbol)
 
     val percentage = DecimalFormat("#%")
 
@@ -101,6 +108,12 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_title)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF4B0082),
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu = true }) {
@@ -111,11 +124,11 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Français") },
+                                text = { Text("Option 1") },
                                 onClick = { showMenu = false }
                             )
                             DropdownMenuItem(
-                                text = { Text("English") },
+                                text = { Text("Option 2") },
                                 onClick = { showMenu = false }
                             )
                         }
@@ -125,7 +138,10 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         },
         bottomBar = {
             val totalWithTaxes = (amount + tipAmount) * ( 1f + if (applyTaxes) taxes else 0f)
-            BottomAppBar {
+            BottomAppBar(
+                containerColor = Color(0xFF4B0082),
+                contentColor = Color.White
+            ) {
 
                 Column(Modifier
                     .fillMaxWidth()
@@ -134,30 +150,38 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Total :")
+                        Text(stringResource(R.string.total))
                         Text(currencyFormat.format(totalWithTaxes))
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Total par personne :")
+                        Text(stringResource(R.string.total_per_person))
                         Text(currencyFormat.format(totalWithTaxes / people))
                     }
                 }
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {}) { Text("Réinitialiser") }
+            FloatingActionButton(
+                onClick = {
+                    amountStr = ""
+                    amount = 0f
+                    applyTaxes = true
+                    tipPercentage = 0.1f
+                    tipAmount = 0f
+                },
+                containerColor = Color(0xFF4B0082),
+                contentColor = Color.White
+            ) { Text(stringResource(R.string.clear)) }
         }
     ) {
 
         innerPadding -> Column(modifier = modifier
         .padding(innerPadding)
         .padding(16.dp)) {
-        Text(
-            text = "Montant de l'addition :"
-        )
+        Text(stringResource(R.string.bill_amount))
         OutlinedTextField(
             value = amountStr,
             onValueChange = {
@@ -172,7 +196,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 }
 
             },
-            label = { Text("Montant") },
+            label = { Text(stringResource(R.string.amount)) },
             prefix = if (isSymbolPrefix) { { Text(currencySymbol) } } else null,
             suffix = if (!isSymbolPrefix) { { Text(currencySymbol) } } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -186,7 +210,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Ajouter les taxes (14.975%)",
+                text = stringResource(R.string.apply_taxes),
                 modifier = Modifier.weight(1f)
             )
             Switch(
@@ -198,7 +222,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         HorizontalDivider( modifier = Modifier.padding(top = 10.dp, bottom = 20.dp) )
 
         Text(
-            text="Pourboire : " + percentage.format(tipPercentage)
+            text= stringResource(R.string.tip) + percentage.format(tipPercentage)
         )
         Slider(
             value = tipPercentage,
@@ -223,7 +247,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             modifier = Modifier.height(15.dp)
         )
 
-        Text(text = "Montant du pourboire")
+        Text(stringResource(R.string.tip_amount))
         OutlinedTextField(
             value = currencyFormat.format(tipAmount),
             readOnly = true,
@@ -234,7 +258,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
         HorizontalDivider( modifier = Modifier.padding(top = 10.dp, bottom = 20.dp) )
 
-        Text(text="Nombre de personnes : $people")
+        Text(stringResource(R.string.number_of_people) + people)
         Slider(
             value = people.toFloat(),
             onValueChange = {

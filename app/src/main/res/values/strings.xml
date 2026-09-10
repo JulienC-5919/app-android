@@ -1,4 +1,14 @@
 <resources>
-    <string name="app_name">My Application 3</string>
+    <string name="app_name">Partage d\'addition</string>
     <string name="app_title">Partage d\'addition</string>
+    <string name="total">Total :</string>
+    <string name="total_per_person">Total par personne :</string>
+    <string name="clear">Tout effacer</string>
+    <string name="bill_amount">Montant de l\'addition :</string>
+    <string name="amount">Montant</string>
+    <string name="apply_taxes">Ajouter les taxes</string>
+    <string name="tip">"Pourboire : "</string>
+    <string name="tip_amount">"Montant du pourboire"</string>
+    <string name="number_of_people">"Nombre de personnes : "</string>
+
 </resources>
